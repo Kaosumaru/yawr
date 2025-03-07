@@ -39,6 +39,10 @@ export class RPCServer extends RPCBase<WebSocket> implements GroupEmitter {
     this.wss.on('connection', ws => this.onConnection(ws));
   }
 
+  public close(): void {
+    this.wss.close();
+  }
+
   public registerJWTAuth(
     authFunction: (token: string) => Promise<UserInfo | undefined>
   ): void {
@@ -143,7 +147,7 @@ export class RPCServer extends RPCBase<WebSocket> implements GroupEmitter {
 
       return;
     }
-    this.sendError(ws, data.id, 'Method not found');
+    this.sendError(ws, data.id, `Method '${data.method}' not found`);
   }
 
   protected onRPCEvent(ws: WebSocket, event: RPCEvent): void {

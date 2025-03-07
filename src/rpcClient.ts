@@ -1,6 +1,7 @@
 import { RPCMessage, RPCCall, RPCEvent, UserInfo } from './interface';
 import { RPCBase } from './rpcShared';
 import { Signal, SignalConnection } from 'typed-signals';
+import { WebSocket } from 'isomorphic-ws';
 
 export class RPCClient extends RPCBase<WebSocket> {
   private ws: WebSocket;
@@ -18,6 +19,10 @@ export class RPCClient extends RPCBase<WebSocket> {
       this.onConnected.connect(() => resolve());
       this.onDisconnected.connect(() => reject());
     });
+  }
+
+  public close(): void {
+    this.ws.close();
   }
 
   public reconnect(): Promise<void> {
@@ -68,7 +73,7 @@ export class RPCClient extends RPCBase<WebSocket> {
       }
       return;
     }
-    this.sendError(ws, data.id, 'Method not found');
+    this.sendError(ws, data.id, `Method '${data.method}' not found`);
   }
 
   protected onRPCEvent(ws: WebSocket, event: RPCEvent): void {
@@ -96,7 +101,7 @@ export class RPCClient extends RPCBase<WebSocket> {
 
     ws.onmessage = event => {
       try {
-        const data = JSON.parse(event.data);
+        const data = JSON.parse(event.data.toString());
         this.onMessage(ws, data);
       } catch (e) {
         this.disconnect();

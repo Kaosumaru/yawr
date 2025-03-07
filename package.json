@@ -119,6 +119,7 @@
     ]
   },
   "dependencies": {
+    "isomorphic-ws": "^5.0.0",
     "typed-signals": "^3.0.0",
     "ws": "^8.18.1"
   }
