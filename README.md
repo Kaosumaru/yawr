@@ -33,10 +33,10 @@ TODO
 
 [build-img]:https://github.com/kaosumaru/yawr/actions/workflows/release.yml/badge.svg
 [build-url]:https://github.com/kaosumaru/yawr/actions/workflows/release.yml
-[downloads-img]:https://img.shields.io/npm/dt/typescript-npm-package-template
-[downloads-url]:https://www.npmtrends.com/typescript-npm-package-template
-[npm-img]:https://img.shields.io/npm/v/typescript-npm-package-template
-[npm-url]:https://www.npmjs.com/package/typescript-npm-package-template
+[downloads-img]:https://img.shields.io/npm/dt/yawr
+[downloads-url]:https://www.npmtrends.com/yawr
+[npm-img]:https://img.shields.io/npm/v/yawr
+[npm-url]:https://www.npmjs.com/package/yawr
 [issues-img]:https://img.shields.io/github/issues/kaosumaru/yawr
 [issues-url]:https://github.com/kaosumaru/yawr/issues
 [codecov-img]:https://codecov.io/gh/kaosumaru/yawr/branch/main/graph/badge.svg
