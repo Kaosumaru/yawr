@@ -33,7 +33,7 @@ const response = await client.call('echo', 'hello');
 
 ## API
 
-TODO
+[Link][documentation-url]
 
 [build-img]:https://github.com/kaosumaru/yawr/actions/workflows/release.yml/badge.svg
 [build-url]:https://github.com/kaosumaru/yawr/actions/workflows/release.yml
@@ -49,3 +49,4 @@ TODO
 [semantic-release-url]:https://github.com/semantic-release/semantic-release
 [commitizen-img]:https://img.shields.io/badge/commitizen-friendly-brightgreen.svg
 [commitizen-url]:http://commitizen.github.io/cz-cli/
+[documentation-url]:https://kaosumaru.github.io/yawr/
