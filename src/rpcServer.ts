@@ -33,9 +33,9 @@ interface SocketData {
 export class RPCServer extends RPCBase<WebSocket> implements GroupEmitter {
   wss: WebSocketServer;
 
-  constructor() {
+  constructor(port?: number) {
     super();
-    this.wss = new WebSocketServer({ noServer: true });
+    this.wss = new WebSocketServer({ port, noServer: port === undefined });
     this.wss.on('connection', ws => this.onConnection(ws));
   }
 

@@ -19,32 +19,17 @@ npm install yawr
 ## Usage
 
 ```ts
-import { myPackage } from 'yawr';
+import { RPCServer } from 'yawr';
 
-myPackage('hello');
-//=> 'hello from my package'
+const server = new RPCServer(8080);
+server.RegisterFunction("echo", async (ctx, data: string) => {
+        return data;
+    });
 ```
 
 ## API
 
-### myPackage(input, options?)
-
-#### input
-
-Type: `string`
-
-Lorem ipsum.
-
-#### options
-
-Type: `object`
-
-##### postfix
-
-Type: `string`
-Default: `rainbows`
-
-Lorem ipsum.
+TODO
 
 [build-img]:https://github.com/ryansonshine/typescript-npm-package-template/actions/workflows/release.yml/badge.svg
 [build-url]:https://github.com/ryansonshine/typescript-npm-package-template/actions/workflows/release.yml
