@@ -3,16 +3,31 @@ import { RPCBase } from './rpcShared';
 import { Signal, SignalConnection } from 'typed-signals';
 import { WebSocket } from 'isomorphic-ws';
 
+/**
+ * Class to create a client for the RPC server.
+ * This can be used in the browser or in Node.js.
+ */
 export class RPCClient extends RPCBase<WebSocket> {
   private ws: WebSocket;
   private url: string;
 
+  /**
+   * Creates an instance of the RPC client.
+   *
+   * @param url - The URL of the WebSocket server to connect to.
+   */
   constructor(url: string) {
     super();
     this.url = url;
     this.ws = this.createSocket();
   }
 
+  /**
+   * Establishes a connection if not already connected.
+   *
+   * @returns {Promise<void>} A promise that resolves when the connection is successfully established,
+   *                          or rejects if the connection isn't correctly estabilished.
+   */
   public connect(): Promise<void> {
     if (this.connected) return Promise.resolve();
     return new Promise<void>((resolve, reject) => {
@@ -21,30 +36,68 @@ export class RPCClient extends RPCBase<WebSocket> {
     });
   }
 
+  /**
+   * Closes the connection to the server.
+   */
   public close(): void {
     this.ws.close();
   }
 
+  /**
+   * Reconnects to the server.
+   *
+   * @returns {Promise<void>} A promise that resolves when the connection is successfully reestablished,
+   *                          or rejects if the connection isn't correctly reestablished
+   */
   public reconnect(): Promise<void> {
     this.connected = false;
     this.ws = this.createSocket();
     return this.connect();
   }
 
+  /**
+   * Authorizes the connection with the given token.
+   *
+   * @param token - The token to authorize the user with.
+   * @returns {Promise<UserInfo | undefined>} A promise that resolves with the user info if the user is authorized,
+   *                                          or rejects if the user is not authorized.
+   */
   public async authorize(token: string): Promise<UserInfo | undefined> {
     const response = await this.call<UserInfo | undefined>('auth', token);
     if (response) this.onAuthorized.emit();
     return response;
   }
 
+  /**
+   * Calls a method on the server.
+   *
+   * @param method - The method to call on the server.
+   * @param params - The parameters to pass to the method.
+   * @returns {Promise<T>} A promise that resolves with the result of the method call,
+   *                       or rejects if the method call fails (throws an exception, for example).
+   */
   public call<T>(method: string, ...params: unknown[]): Promise<T> {
     return super.callRPC(this.ws, method, ...params);
   }
 
+  /**
+   * Registers a function with a given name. Server can use call<T> method to call this function.
+   *
+   * @param name - The name of the function to register.
+   * @param method - The function to be registered, which can take any number of arguments and return any type.
+   */
   public RegisterFunction(name: string, method: (...args: any[]) => any): void {
     this.functions.set(name, method);
   }
 
+  /**
+   * Registers an event listener for the specified event name.
+   * The method will be called whenever the event is emitted by server.
+   *
+   * @param name - The name of the event to listen for.
+   * @param method - The callback function to be executed when the event is triggered.
+   * @returns A SignalConnection object that can be used to manage the connection.
+   */
   public on(name: string, method: (...args: any[]) => void): SignalConnection {
     let signal = this.events.get(name);
     if (!signal) {

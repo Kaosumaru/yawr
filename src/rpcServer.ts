@@ -8,20 +8,82 @@ export interface FilterInfo {
   call: CallCallback;
 }
 
+/**
+ * Interface representing a group emitter that can emit events to a group and iterate over a group.
+ */
 export interface GroupEmitter {
+  /**
+   * Emits an event to a specified group.
+   *
+   * @param group - The name of the group to emit the event to.
+   * @param method - The method name to be called on the group.
+   * @param params - Additional parameters to be passed to the method.
+   */
   emitToGroup(group: string, method: string, ...params: any): void;
+
+  /**
+   * Iterates over a specified group and executes a callback function for each context.
+   *
+   * @param group - The name of the group to iterate over.
+   * @param cb - The callback function to be executed for each context.
+   */
   iterateGroup(group: string, cb: (context: Context) => void): void;
 }
 
+/**
+ * Represents the context for a WebSocket connection, extending the capabilities of a GroupEmitter.
+ * Provides methods for managing group memberships and emitting events to groups.
+ */
 export interface Context extends GroupEmitter {
+  /**
+   * The WebSocket connection associated with this context.
+   */
   ws: WebSocket;
+  /**
+   * The optional user ID associated with this context.
+   */
   userId?: string;
+  /**
+   * The optional user name associated with this context.
+   */
   userName?: string;
+  /**
+   * Indicates whether the user is an admin.
+   */
   isAdmin?: boolean;
+
+  /**
+   * Adds the websocket from this context to the specified group.
+   * @param group - The name of the group to add the context to.
+   */
   addToGroup(group: string): void;
+
+  /**
+   * Removes the websocket from this context from the specified group.
+   * @param group - The name of the group to remove the context from.
+   */
   removeFromGroup(group: string): void;
+
+  /**
+   * Emits an event to all members of the specified group.
+   * @param group - The name of the group to emit the event to.
+   * @param method - The method name of the event.
+   * @param params - The parameters to pass with the event.
+   */
   emitToGroup(group: string, method: string, ...params: any): void;
+
+  /**
+   * Calls a method with the specified parameters.
+   * @param method - The method name to call.
+   * @param params - The parameters to pass with the method call.
+   */
   call(method: string, ...params: any): void;
+
+  /**
+   * Iterates over all members of the specified group and executes the callback function for each member.
+   * @param group - The name of the group to iterate over.
+   * @param cb - The callback function to execute
+   */
   iterateGroup(group: string, cb: (context: Context) => void): void;
 }
 
@@ -30,19 +92,41 @@ interface SocketData {
   groups: Set<string>;
 }
 
+/**
+ * The `RPCServer` class extends `RPCBase` and implements `GroupEmitter` to provide
+ * a WebSocket-based RPC server with group management and JWT authentication support.
+ *
+ * @template WebSocket - The WebSocket type used by the server.
+ */
 export class RPCServer extends RPCBase<WebSocket> implements GroupEmitter {
+  /**
+   * The WebSocket server instance.
+   */
   wss: WebSocketServer;
 
+  /**
+   * Creates an instance of `RPCServer`.
+   *
+   * @param port - The port number to listen on. If not provided, the server will operate in noServer mode.
+   */
   constructor(port?: number) {
     super();
     this.wss = new WebSocketServer({ port, noServer: port === undefined });
     this.wss.on('connection', ws => this.onConnection(ws));
   }
 
+  /**
+   * Closes the WebSocket server.
+   */
   public close(): void {
     this.wss.close();
   }
 
+  /**
+   * Registers a JWT authentication function.
+   *
+   * @param authFunction - A function that takes a JWT token and returns a `UserInfo` object or `undefined`.
+   */
   public registerJWTAuth(
     authFunction: (token: string) => Promise<UserInfo | undefined>
   ): void {
@@ -64,6 +148,12 @@ export class RPCServer extends RPCBase<WebSocket> implements GroupEmitter {
     );
   }
 
+  /**
+   * Registers an RPC function.
+   *
+   * @param name - The name of the RPC function.
+   * @param method - The function to be registered.
+   */
   public RegisterFunction(
     name: string,
     method: (context: Context, ...args: any[]) => any
@@ -71,6 +161,12 @@ export class RPCServer extends RPCBase<WebSocket> implements GroupEmitter {
     this.functions.set(name, method);
   }
 
+  /**
+   * Helper to register an authorized RPC function that requires user authentication.
+   *
+   * @param name - The name of the RPC function.
+   * @param method - The function to be registered.
+   */
   public RegisterAuthorizedFunction(
     name: string,
     method: (context: Context, ...args: unknown[]) => unknown
@@ -81,6 +177,13 @@ export class RPCServer extends RPCBase<WebSocket> implements GroupEmitter {
     });
   }
 
+  /**
+   * Registers an event listener.
+   *
+   * @param name - The name of the event.
+   * @param method - The function to be called when the event is emitted.
+   * @returns A `SignalConnection` object.
+   */
   public on(
     name: string,
     method: (context: Context, ...args: unknown[]) => void
@@ -93,6 +196,12 @@ export class RPCServer extends RPCBase<WebSocket> implements GroupEmitter {
     return signal.connect(method);
   }
 
+  /**
+   * Registers a callback to be called when a group is removed.
+   *
+   * @param group - The name of the group.
+   * @param method - The callback function to be called when the group is removed.
+   */
   public onGroupRemoved(group: string, method: (() => void) | undefined): void {
     if (!method) {
       this.groupRemoved.delete(group);
@@ -102,10 +211,23 @@ export class RPCServer extends RPCBase<WebSocket> implements GroupEmitter {
     this.groupRemoved.set(group, method);
   }
 
+  /**
+   * Returns the number of members in a group.
+   *
+   * @param group - The name of the group.
+   * @returns The number of members in the group.
+   */
   public groupMemberCount(group: string): number {
     return this.groups.get(group)?.size ?? 0;
   }
 
+  /**
+   * Emits an event to all members of a group.
+   *
+   * @param group - The name of the group.
+   * @param method - The name of the RPC method.
+   * @param params - The parameters to be passed to the RPC method.
+   */
   public emitToGroup(
     group: string,
     method: string,
@@ -119,6 +241,12 @@ export class RPCServer extends RPCBase<WebSocket> implements GroupEmitter {
     }
   }
 
+  /**
+   * Iterates over all members of a group and calls a callback function for each member.
+   *
+   * @param group - The name of the group.
+   * @param cb - The callback function to be called for each member.
+   */
   public iterateGroup(group: string, cb: (ctx: Context) => void): void {
     const groupSet = this.groups.get(group);
     if (groupSet) {

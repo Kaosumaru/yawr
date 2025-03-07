@@ -1,0 +1,9 @@
+{
+    "plugin": [
+        "typedoc-github-theme"
+    ],
+    "out": "./docs",
+    "entryPoints": [
+        "./src/index.ts"
+    ],
+}
