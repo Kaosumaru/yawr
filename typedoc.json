@@ -6,4 +6,7 @@
     "entryPoints": [
         "./src/index.ts"
     ],
+    "projectDocuments": [
+        "documents/*.md"
+    ]
 }
