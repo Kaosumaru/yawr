@@ -2,6 +2,7 @@ import { WebSocketServer, WebSocket } from 'ws';
 import { RPCMessage, RPCCall, RPCEvent, UserInfo } from './interface';
 import { RPCBase } from './rpcShared';
 import { Signal, SignalConnection } from 'typed-signals';
+import { ServerUsers } from './serverUsers';
 
 export type CallCallback = (method: string, ...args: any[]) => void;
 export interface FilterInfo {
@@ -90,6 +91,8 @@ export interface Context extends GroupEmitter {
 interface SocketData {
   context: Context;
   groups: Set<string>;
+  lastPong: number;
+  timeout?: NodeJS.Timeout;
 }
 
 /**
@@ -140,9 +143,16 @@ export class RPCServer extends RPCBase<WebSocket> implements GroupEmitter {
         if (!userInfo) return undefined;
         const userData = this.socketData.get(context.ws);
         if (!userData) return undefined;
+
+        if (userData.context.userId) {
+          this.users.userDisconnected(userData.context.userId);
+        }
+
         userData.context.userId = userInfo.id;
         userData.context.userName = userInfo.name;
         userData.context.isAdmin = userInfo.isAdmin;
+        this.users.userConnected(userData.context.userId);
+
         return userInfo;
       }
     );
@@ -194,6 +204,21 @@ export class RPCServer extends RPCBase<WebSocket> implements GroupEmitter {
       this.events.set(name, signal);
     }
     return signal.connect(method);
+  }
+
+  /**
+   * Registers a listener for changes in the user's connection status.
+   *
+   * @param user - The username to monitor for connection status changes.
+   * @param listener - A callback function that is invoked when the user's connection status changes.
+   *                    The callback receives a boolean parameter indicating whether the user is connected (true) or disconnected (false).
+   * @returns A function that can be called to remove the listener.
+   */
+  public onUserStatus(
+    user: string,
+    listener: (connected: boolean) => void
+  ): () => void {
+    return this.users.addListener(user, listener);
   }
 
   /**
@@ -316,13 +341,33 @@ export class RPCServer extends RPCBase<WebSocket> implements GroupEmitter {
     };
   }
 
+  protected pingClient(ws: WebSocket, data: SocketData): void {
+    ws.ping();
+    data.timeout = setTimeout(() => {
+      const timeSinceLastPong = Date.now() - data.lastPong;
+      if (timeSinceLastPong > this.pingTimeout) {
+        ws.close();
+        this.onDisconnect(ws);
+      } else {
+        this.pingClient(ws, data);
+      }
+    }, this.pingTimeout);
+  }
+
   protected onConnection(ws: WebSocket): void {
     this.clients.add(ws);
-    this.socketData.set(ws, {
+    const data: SocketData = {
       groups: new Set(),
       context: this.createContext(ws),
+      lastPong: Date.now(),
+    };
+    this.socketData.set(ws, data);
+
+    this.pingClient(ws, data);
+
+    ws.on('pong', () => {
+      data.lastPong = Date.now();
     });
-    ws.on('error', () => this.onDisconnect(ws));
 
     ws.on('message', (message: string) => {
       try {
@@ -332,9 +377,25 @@ export class RPCServer extends RPCBase<WebSocket> implements GroupEmitter {
         this.onDisconnect(ws);
       }
     });
+
+    ws.on('error', () => this.onDisconnect(ws));
+    ws.on('close', () => this.onDisconnect(ws));
   }
 
   protected onDisconnect(ws: WebSocket): void {
+    const data = this.socketData.get(ws);
+    if (!data) {
+      return;
+    }
+
+    if (data.context.userId) {
+      this.users.userDisconnected(data.context.userId);
+    }
+
+    if (data.timeout) {
+      clearTimeout(data.timeout);
+    }
+
     this.removeFromAllGroups(ws);
     ws.close();
     this.clients.delete(ws);
@@ -417,4 +478,6 @@ export class RPCServer extends RPCBase<WebSocket> implements GroupEmitter {
   protected groupRemoved: Map<string, () => void> = new Map();
   protected functions: Map<string, (context: Context, ...args: any[]) => any> =
     new Map();
+  protected pingTimeout = 30000;
+  protected users = new ServerUsers();
 }
