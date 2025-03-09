@@ -73,11 +73,11 @@ export interface Context extends GroupEmitter {
   emitToGroup(group: string, method: string, ...params: any): void;
 
   /**
-   * Calls a method with the specified parameters.
+   * Emits an event with the specified parameters to the caller.
    * @param method - The method name to call.
    * @param params - The parameters to pass with the method call.
    */
-  call(method: string, ...params: any): void;
+  emit(method: string, ...params: any): void;
 
   /**
    * Iterates over all members of the specified group and executes the callback function for each member.
@@ -300,7 +300,7 @@ export class RPCServer extends RPCBase<WebSocket> implements GroupEmitter {
           }
         }
       },
-      call: (method: string, ...params: any) =>
+      emit: (method: string, ...params: any) =>
         this.emit(ws, method, ...params),
       iterateGroup: (group: string, cb: (ctx: Context) => void) => {
         const groupSet = this.groups.get(group);
