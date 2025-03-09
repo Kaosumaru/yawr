@@ -1,6 +1,6 @@
 {
     "plugin": [
-        "typedoc-material-theme"
+        "typedoc-github-theme"
     ],
     "out": "./docs",
     "entryPoints": [
