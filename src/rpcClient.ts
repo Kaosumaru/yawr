@@ -1,14 +1,16 @@
 import { RPCMessage, RPCCall, RPCEvent, UserInfo } from './interface';
 import { RPCBase } from './rpcShared';
 import { Signal, SignalConnection } from 'typed-signals';
-import { WebSocket } from 'isomorphic-ws';
+import { WebSocket as IsoWebSocket } from 'isomorphic-ws';
 
 /**
  * Class to create a client for the RPC server.
  * This can be used in the browser or in Node.js.
  */
-export class RPCClient extends RPCBase<WebSocket> {
-  private ws: WebSocket;
+
+type Socket = IsoWebSocket | WebSocket;
+export class RPCClient extends RPCBase<Socket> {
+  private ws: Socket;
   private url: string;
 
   /**
@@ -107,13 +109,19 @@ export class RPCClient extends RPCBase<WebSocket> {
     return signal.connect(method);
   }
 
-  protected createSocket(): WebSocket {
-    const ws = new WebSocket(this.url);
+  protected createSocket(): Socket {
+    let ws: Socket;
+    if (window !== undefined && window.WebSocket !== undefined) {
+      ws = new WebSocket(this.url);
+    } else {
+      ws = new IsoWebSocket(this.url);
+    }
+
     this.initialize(ws);
     return ws;
   }
 
-  protected onRPCMessage(ws: WebSocket, data: RPCCall): void {
+  protected onRPCMessage(ws: Socket, data: RPCCall): void {
     const method = this.functions.get(data.method);
     if (method) {
       try {
@@ -129,14 +137,14 @@ export class RPCClient extends RPCBase<WebSocket> {
     this.sendError(ws, data.id, `Method '${data.method}' not found`);
   }
 
-  protected onRPCEvent(ws: WebSocket, event: RPCEvent): void {
+  protected onRPCEvent(ws: Socket, event: RPCEvent): void {
     const signal = this.events.get(event.method);
     if (signal) {
       signal.emit(...event.params);
     }
   }
 
-  protected initialize(ws: WebSocket): void {
+  protected initialize(ws: Socket): void {
     ws.onopen = () => {
       this.connected = true;
       this.onConnected.emit();
@@ -152,14 +160,25 @@ export class RPCClient extends RPCBase<WebSocket> {
       this.disconnect();
     };
 
-    ws.onmessage = event => {
-      try {
-        const data = JSON.parse(event.data.toString());
-        this.onMessage(ws, data);
-      } catch (e) {
-        this.disconnect();
-      }
-    };
+    if (ws instanceof WebSocket) {
+      ws.onmessage = event => {
+        try {
+          const data = JSON.parse(event.data);
+          this.onMessage(ws, data);
+        } catch (e) {
+          this.disconnect();
+        }
+      };
+    } else {
+      ws.onmessage = event => {
+        try {
+          const data = JSON.parse(event.data.toString());
+          this.onMessage(ws, data);
+        } catch (e) {
+          this.disconnect();
+        }
+      };
+    }
   }
 
   public disconnect(): void {
@@ -168,7 +187,7 @@ export class RPCClient extends RPCBase<WebSocket> {
     this.onDisconnected.emit(null);
   }
 
-  protected onMessage(ws: WebSocket, data: RPCMessage): void {
+  protected onMessage(ws: Socket, data: RPCMessage): void {
     switch (data.type) {
       case 'rpc':
         this.onRPCMessage(ws, data);
