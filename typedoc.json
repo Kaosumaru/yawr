@@ -1,12 +1,12 @@
 {
     "plugin": [
-        "typedoc-github-theme"
+        "typedoc-material-theme"
     ],
     "out": "./docs",
     "entryPoints": [
         "./src/index.ts"
     ],
     "projectDocuments": [
-        "documents/*.md"
+        "documents/examples.md"
     ]
 }
