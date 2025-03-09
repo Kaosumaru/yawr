@@ -19,14 +19,14 @@ npm install yawr
 ## Usage
 
 ```ts
-import { RPCServer } from 'yawr';
+import { RPCServer, RPCClient } from 'yawr';
 
 const server = new RPCServer(8080);
 server.RegisterFunction("echo", async (ctx, data: string) => {
         return data;
     });
 
-const client = new RPCClient('ws://localhost:8082');
+const client = new RPCClient('ws://localhost:8080');
 await client.connect();
 const response = await client.call('echo', 'hello');
 ```
