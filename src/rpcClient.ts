@@ -111,7 +111,7 @@ export class RPCClient extends RPCBase<Socket> {
 
   protected createSocket(): Socket {
     let ws: Socket;
-    if (window !== undefined && window.WebSocket !== undefined) {
+    if (typeof window !== 'undefined' && window.WebSocket !== undefined) {
       ws = new WebSocket(this.url);
     } else {
       ws = new IsoWebSocket(this.url);
@@ -160,7 +160,7 @@ export class RPCClient extends RPCBase<Socket> {
       this.disconnect();
     };
 
-    if (ws instanceof WebSocket) {
+    if (typeof window !== 'undefined' && ws instanceof WebSocket) {
       ws.onmessage = event => {
         try {
           const data = JSON.parse(event.data);
@@ -169,7 +169,7 @@ export class RPCClient extends RPCBase<Socket> {
           this.disconnect();
         }
       };
-    } else {
+    } else if (ws instanceof IsoWebSocket) {
       ws.onmessage = event => {
         try {
           const data = JSON.parse(event.data.toString());
