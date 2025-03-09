@@ -8,8 +8,8 @@ import { RPCServer } from 'yawr';
 
 const server = new RPCServer(8080);
 server.RegisterFunction("echo", (ctx, data: string) => {
-        return data;
-    });
+    return data;
+});
 ```
 
 ### Client
@@ -31,12 +31,12 @@ import { RPCServer } from 'yawr';
 
 const server = new RPCServer(8080);
 server.RegisterFunction("joinRoom", (ctx, roomName: string) => {
-        ctx.addToGroup(roomName);
-    });
+    ctx.addToGroup(roomName);
+});
 
 server.RegisterFunction("message", (ctx, roomName: string, message: string) => {
-        ctx.emitToGroup(roomName, "onMessage", roomName, message);
-    });
+    ctx.emitToGroup(roomName, "onMessage", roomName, message);
+});
 ```
 
 ### Client
