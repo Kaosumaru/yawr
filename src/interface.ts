@@ -18,10 +18,14 @@ export interface RPCEvent {
   params: any[];
 }
 
+export interface RPCPing {
+  type: 'ping';
+}
+
 export interface UserInfo {
   id: string;
   name: string;
   isAdmin?: boolean;
 }
 
-export type RPCMessage = RPCCall | RPCResponse | RPCEvent;
+export type RPCMessage = RPCCall | RPCResponse | RPCEvent | RPCPing;

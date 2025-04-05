@@ -192,6 +192,9 @@ export class RPCClient extends RPCBase<Socket> {
       case 'rpc':
         this.onRPCMessage(ws, data);
         break;
+      case 'ping':
+        this.send(ws, { type: 'ping' });
+        break;
       case 'rpcResponse':
         this.onRPCResponse(data);
         break;

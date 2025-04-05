@@ -1,8 +1,9 @@
 # Examples
 
-## Simple echo server and client
+## Simple echo server
+You can register function on a server that client can call remotely.
 
-### Server
+#### Server
 ```ts
 import { RPCServer } from 'yawr';
 
@@ -12,20 +13,20 @@ server.RegisterFunction("echo", (ctx, data: string) => {
 });
 ```
 
-### Client
+#### Client
 
 ```ts
 import { RPCClient } from 'yawr';
 
 const client = new RPCClient('ws://localhost:8080');
 await client.connect();
-const response = await client.call('echo', 'hello');
+const response = await client.call<string>('echo', 'hello');
 ```
 
+## Simple chat server
+You can assign given connection to a group, and emit events to all connections in that group.
 
-## Simple chat server and client
-
-### Server
+#### Server
 ```ts
 import { RPCServer } from 'yawr';
 
@@ -39,7 +40,7 @@ server.RegisterFunction("message", (ctx, roomName: string, message: string) => {
 });
 ```
 
-### Client
+#### Client
 
 ```ts
 import { RPCClient } from 'yawr';

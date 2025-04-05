@@ -342,7 +342,7 @@ export class RPCServer extends RPCBase<WebSocket> implements GroupEmitter {
   }
 
   protected pingClient(ws: WebSocket, data: SocketData): void {
-    ws.ping();
+    this.send(ws, { type: 'ping' });
     data.timeout = setTimeout(() => {
       const timeSinceLastPong = Date.now() - data.lastPong;
       if (timeSinceLastPong > this.pingTimeout) {
@@ -364,10 +364,6 @@ export class RPCServer extends RPCBase<WebSocket> implements GroupEmitter {
     this.socketData.set(ws, data);
 
     this.pingClient(ws, data);
-
-    ws.on('pong', () => {
-      data.lastPong = Date.now();
-    });
 
     ws.on('message', (message: string) => {
       try {
@@ -406,6 +402,9 @@ export class RPCServer extends RPCBase<WebSocket> implements GroupEmitter {
     switch (data.type) {
       case 'rpc':
         this.onRPCMessage(ws, data);
+        break;
+      case 'ping':
+        this.onPing(ws);
         break;
       case 'rpcResponse':
         this.onRPCResponse(data);
@@ -466,6 +465,12 @@ export class RPCServer extends RPCBase<WebSocket> implements GroupEmitter {
       }
     }
     socketData.groups.clear();
+  }
+
+  protected onPing(ws: WebSocket): void {
+    const data = this.socketData.get(ws);
+    if (!data) return;
+    data.lastPong = Date.now();
   }
 
   protected socketData: Map<WebSocket, SocketData> = new Map();

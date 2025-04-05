@@ -22,7 +22,7 @@ describe('examples', () => {
       });
 
       await client.connect();
-      const response = await client.call('echo', 'hello');
+      const response = await client.call<string>('echo', 'hello');
       expect(response).toBe('hello');
     }));
 
