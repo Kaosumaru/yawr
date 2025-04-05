@@ -91,6 +91,7 @@ export interface Context extends GroupEmitter {
 interface SocketData {
   context: Context;
   groups: Set<string>;
+  lastPing: number;
   lastPong: number;
   timeout?: NodeJS.Timeout;
 }
@@ -343,9 +344,9 @@ export class RPCServer extends RPCBase<WebSocket> implements GroupEmitter {
 
   protected pingClient(ws: WebSocket, data: SocketData): void {
     this.send(ws, { type: 'ping' });
+    data.lastPing = Date.now();
     data.timeout = setTimeout(() => {
-      const timeSinceLastPong = Date.now() - data.lastPong;
-      if (timeSinceLastPong > this.pingTimeout) {
+      if (data.lastPong < data.lastPing) {
         ws.close();
         this.onDisconnect(ws);
       } else {
@@ -359,7 +360,8 @@ export class RPCServer extends RPCBase<WebSocket> implements GroupEmitter {
     const data: SocketData = {
       groups: new Set(),
       context: this.createContext(ws),
-      lastPong: Date.now(),
+      lastPing: 0,
+      lastPong: 0,
     };
     this.socketData.set(ws, data);
 
