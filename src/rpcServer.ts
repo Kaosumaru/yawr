@@ -37,10 +37,6 @@ export interface GroupEmitter {
  */
 export interface Context extends GroupEmitter {
   /**
-   * The WebSocket connection associated with this context.
-   */
-  ws: WebSocket;
-  /**
    * The optional user ID associated with this context.
    */
   userId?: string;
@@ -66,30 +62,19 @@ export interface Context extends GroupEmitter {
   removeFromGroup(group: string): void;
 
   /**
-   * Emits an event to all members of the specified group.
-   * @param group - The name of the group to emit the event to.
-   * @param method - The method name of the event.
-   * @param params - The parameters to pass with the event.
-   */
-  emitToGroup(group: string, method: string, ...params: any): void;
-
-  /**
    * Emits an event with the specified parameters to the caller.
    * @param method - The method name to call.
    * @param params - The parameters to pass with the method call.
    */
   emit(method: string, ...params: any): void;
+}
 
-  /**
-   * Iterates over all members of the specified group and executes the callback function for each member.
-   * @param group - The name of the group to iterate over.
-   * @param cb - The callback function to execute
-   */
-  iterateGroup(group: string, cb: (context: Context) => void): void;
+interface ServerContext extends Context {
+  ws: WebSocket;
 }
 
 interface SocketData {
-  context: Context;
+  context: ServerContext;
   groups: Set<string>;
   lastPing: number;
   lastPong: number;
@@ -134,10 +119,10 @@ export class RPCServer extends RPCBase<WebSocket> implements GroupEmitter {
   public registerJWTAuth(
     authFunction: (token: string) => Promise<UserInfo | undefined>
   ): void {
-    this.RegisterFunction(
+    this.RegisterInternalFunction(
       'auth',
       async (
-        context: Context,
+        context: ServerContext,
         token: string
       ): Promise<UserInfo | undefined> => {
         const userInfo = await authFunction(token);
@@ -285,6 +270,13 @@ export class RPCServer extends RPCBase<WebSocket> implements GroupEmitter {
     }
   }
 
+  protected RegisterInternalFunction(
+    name: string,
+    method: (context: ServerContext, ...args: any[]) => any
+  ): void {
+    this.functions.set(name, method);
+  }
+
   protected onRPCMessage(ws: WebSocket, data: RPCCall): void {
     const method = this.functions.get(data.method);
     if (method) {
@@ -313,7 +305,7 @@ export class RPCServer extends RPCBase<WebSocket> implements GroupEmitter {
     }
   }
 
-  protected createContext(ws: WebSocket): Context {
+  protected createContext(ws: WebSocket): ServerContext {
     return {
       ws,
       addToGroup: (group: string) => this.addToGroup(ws, group),
@@ -483,8 +475,10 @@ export class RPCServer extends RPCBase<WebSocket> implements GroupEmitter {
     Signal<(context: Context, ...args: any[]) => void>
   > = new Map();
   protected groupRemoved: Map<string, () => void> = new Map();
-  protected functions: Map<string, (context: Context, ...args: any[]) => any> =
-    new Map();
+  protected functions: Map<
+    string,
+    (context: ServerContext, ...args: any[]) => any
+  > = new Map();
   protected pingTimeout = 30000;
   protected users = new ServerUsers();
 }
