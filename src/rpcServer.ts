@@ -3,6 +3,8 @@ import { RPCMessage, RPCCall, RPCEvent, UserInfo } from './interface';
 import { RPCBase } from './rpcShared';
 import { Signal, SignalConnection } from 'typed-signals';
 import { ServerUsers } from './serverUsers';
+import { Duplex } from 'stream';
+import { IncomingMessage } from 'http';
 
 export type CallCallback = (method: string, ...args: any[]) => void;
 export interface FilterInfo {
@@ -91,7 +93,7 @@ export class RPCServer extends RPCBase<WebSocket> implements GroupEmitter {
   /**
    * The WebSocket server instance.
    */
-  wss: WebSocketServer;
+  protected wss: WebSocketServer;
 
   /**
    * Creates an instance of `RPCServer`.
@@ -109,6 +111,19 @@ export class RPCServer extends RPCBase<WebSocket> implements GroupEmitter {
    */
   public close(): void {
     this.wss.close();
+  }
+
+  /**
+   * Forwards the upgrade request to the WebSocket server.
+   * Useful if you have an existing HTTP server and want to handle WebSocket upgrades.
+   */
+  public handleUpgrade(
+    request: IncomingMessage,
+    socket: Duplex,
+    upgradeHead: Buffer,
+    callback: (client: WebSocket, request: IncomingMessage) => void
+  ): void {
+    this.wss.handleUpgrade(request, socket, upgradeHead, callback);
   }
 
   /**
