@@ -120,10 +120,11 @@ export class RPCServer extends RPCBase<WebSocket> implements GroupEmitter {
   public handleUpgrade(
     request: IncomingMessage,
     socket: Duplex,
-    upgradeHead: Buffer,
-    callback: (client: WebSocket, request: IncomingMessage) => void
+    upgradeHead: Buffer
   ): void {
-    this.wss.handleUpgrade(request, socket, upgradeHead, callback);
+    this.wss.handleUpgrade(request, socket, upgradeHead, ws => {
+      this.wss.emit('connection', ws, request);
+    });
   }
 
   /**
