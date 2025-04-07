@@ -68,8 +68,18 @@ export class RPCClient extends RPCBase<Socket> {
    */
   public async authorize(token: string): Promise<UserInfo | undefined> {
     const response = await this.call<UserInfo | undefined>('auth', token);
+    this.userInfo = response;
     if (response) this.onAuthorized.emit();
     return response;
+  }
+
+  /**
+   * Returns the user info of the currently authorized user.
+   *
+   * @returns {UserInfo | undefined} The user info of the currently authorized user, or undefined if not authorized.
+   */
+  public getUserInfo(): UserInfo | undefined {
+    return this.userInfo;
   }
 
   /**
@@ -202,6 +212,7 @@ export class RPCClient extends RPCBase<Socket> {
 
   protected events: Map<string, Signal<(...args: any[]) => void>> = new Map();
   protected functions: Map<string, (...args: any[]) => any> = new Map();
+  protected userInfo: UserInfo | undefined;
   onDisconnected = new Signal<(error: any) => void>();
   onConnected = new Signal<() => void>();
   onReconnected = new Signal<() => void>();
