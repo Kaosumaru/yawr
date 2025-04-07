@@ -41,8 +41,10 @@ export class RPCClient extends RPCBase<Socket> {
   /**
    * Closes the connection to the server.
    */
-  public close(): void {
+  public disconnect(): void {
+    this.connected = false;
     this.ws.close();
+    this.onDisconnected.emit(null);
   }
 
   /**
@@ -179,12 +181,6 @@ export class RPCClient extends RPCBase<Socket> {
         }
       };
     }
-  }
-
-  public disconnect(): void {
-    this.connected = false;
-    this.ws.close();
-    this.onDisconnected.emit(null);
   }
 
   protected onMessage(ws: Socket, data: RPCMessage): void {

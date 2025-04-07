@@ -9,7 +9,7 @@ async function helper(
   try {
     await cb(server, client);
   } finally {
-    client.close();
+    client.disconnect();
     server.close();
   }
 }
